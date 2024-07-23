@@ -13,7 +13,7 @@ library(dplyr)
 library(ggplot2)
 
 
-file_path <- '/Users/user/Downloads/Final Project/StormEvents_details-ftp_v1.0_d2022_c20240716.csv'
+file_path <- "C:/Users/SERGV/Downloads/Final Project/StormEvents_details-ftp_v1.0_d2022_c20240716.csv"
 
 
 storm_data <- read.csv(file_path)

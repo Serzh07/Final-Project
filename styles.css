@@ -1,1 +1,43 @@
 /* css styles */
+
+body {
+  background-color: #F1F2EB;
+  color: #333;
+  font-family: 'Arial', sans-serif;
+}
+
+.navbar {
+  background-color: #A4C2A5;
+}
+
+.navbar .nav-link {
+  color: #D8DAD3;
+}
+
+.navbar .nav-link:hover {
+  color: #333;
+}
+
+.header, .footer {
+  background-color: #A4C2A5;
+  color: #D8DAD3;
+}
+
+.content {
+  background-color: #FFFFFF;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #A4C2A5;
+}
+
+a {
+  color: #A4C2A5;
+}
+
+a:hover {
+  color: #333;
+}
