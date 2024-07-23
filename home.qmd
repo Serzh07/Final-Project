@@ -3,6 +3,8 @@ title: "Extreme Weather Events in the States"
 author: "Serzh"
 format: html
 editor: visual
+execute: 
+  echo: false
 ---
 
 # Introduction to Our Project
@@ -10,7 +12,6 @@ editor: visual
 Welcome to our comprehensive guide on Extreme Weather Events in the States! With the increasing frequency and intensity of weather phenomena such as hurricanes, wildfires, floods, and tornadoes, it's crucial to understand their impact and how they vary across different regions. Our project aims to provide a detailed analysis of these events, offering insights into patterns, trends, and their implications on communities and the environment.
 
 ```{r}
-#| echo: false
 #| message: false
 
 library(dplyr)
@@ -32,6 +33,7 @@ ggplot(filtered_data, aes(x = STATE,fill = STATE)) +
   geom_bar() +
   theme(axis.text.x = element_text(angle=65, vjust=0.6)) + 
   labs(title = "The States Where Extreme Weather Events Happen the Most (2022)", x = "States", y = "Count of Extreme Weather Events") 
+
 
 
 

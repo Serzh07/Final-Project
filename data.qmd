@@ -11,7 +11,10 @@ execute:
 
 library(dplyr)
 library(ggplot2)
+library(ggridges)
 
+
+#First Graphic
 
 file_path <- "C:/Users/SERGV/Downloads/Final Project/StormEvents_details-ftp_v1.0_d2022_c20240716.csv"
 
@@ -35,7 +38,7 @@ month_data <- data %>%
                                         "May", "June", "July", "August", 
                                         "September", "October", "November", "December")))
 
-# Create a circular barplot with customized colors
+
 ggplot(month_data, aes(x = factor(MONTH_NAME, levels = c("January", "February", "March", "April", 
                                                          "May", "June", "July", "August", 
                                                          "September", "October", "November", "December")), 
@@ -49,5 +52,20 @@ ggplot(month_data, aes(x = factor(MONTH_NAME, levels = c("January", "February", 
   scale_fill_manual(values = c("Spring" = "#C5FF95", "Summer" = "yellow", "Autumn" = "orange", "Winter" = "#6EACDA")) +
   theme(axis.text.x = element_text(size = 12, face = "bold", angle = 90),
         plot.title = element_text(hjust = 0.5, size = 16, face = "bold"))
+
+
+#Second Graphic
+
+filtered_data <- storm_data %>%
+  group_by(STATE) %>%
+  filter(n() < 20) %>%
+  ungroup()
+
+
+ggplot(filtered_data, aes(x = MONTH_NAME, y = EVENT_TYPE, fill = EVENT_TYPE)) +
+  geom_density_ridges(alpha = 0.7) +
+  theme_ridges() +
+  labs(title = "Ridgeline Chart of Event Types", x = "Value", y = "Event Type")
+
 
 ```
