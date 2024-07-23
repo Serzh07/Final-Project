@@ -1,0 +1,53 @@
+---
+title: "Data Analysis"
+format: html
+editor: visual
+execute: 
+  echo: false
+---
+
+```{r}
+#| message: false
+
+library(dplyr)
+library(ggplot2)
+
+
+file_path <- '/Users/user/Downloads/Final Project/StormEvents_details-ftp_v1.0_d2022_c20240716.csv'
+
+
+storm_data <- read.csv(file_path)
+
+
+data <- storm_data %>%
+  mutate(season = case_when(
+    MONTH_NAME %in% c("March", "April", "May") ~ "Spring",
+    MONTH_NAME %in% c("June", "July", "August") ~ "Summer",
+    MONTH_NAME %in% c("September", "October", "November") ~ "Autumn",
+    MONTH_NAME %in% c("December", "January", "February") ~ "Winter",
+    TRUE ~ NA_character_  
+  ))
+
+month_data <- data %>%
+  group_by(MONTH_NAME, season) %>%
+  summarise(count = n()) %>%
+  arrange(factor(MONTH_NAME, levels = c("January", "February", "March", "April", 
+                                        "May", "June", "July", "August", 
+                                        "September", "October", "November", "December")))
+
+# Create a circular barplot with customized colors
+ggplot(month_data, aes(x = factor(MONTH_NAME, levels = c("January", "February", "March", "April", 
+                                                         "May", "June", "July", "August", 
+                                                         "September", "October", "November", "December")), 
+                       y = count, fill = season)) +
+  geom_bar(stat = "identity") +
+  coord_polar(theta = "x") +
+  theme_minimal() +
+  labs(title = "Number of Extreme Weather Events by Month USA",
+       x = "",
+       y = "Number of Events") +
+  scale_fill_manual(values = c("Spring" = "#C5FF95", "Summer" = "yellow", "Autumn" = "orange", "Winter" = "#6EACDA")) +
+  theme(axis.text.x = element_text(size = 12, face = "bold", angle = 90),
+        plot.title = element_text(hjust = 0.5, size = 16, face = "bold"))
+
+```
