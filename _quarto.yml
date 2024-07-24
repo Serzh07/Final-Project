@@ -7,9 +7,10 @@ website:
     left:
       - href: home.qmd
         text: Home
-      - about.qmd
       - href: data.qmd
         text: Data Analyisis
+      - about.qmd
+      
 format:
   html:
     theme: cosmo

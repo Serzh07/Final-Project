@@ -11,12 +11,12 @@ execute:
 
 library(dplyr)
 library(ggplot2)
-library(ggridges)
+
 
 
 #First Graphic
 
-file_path <- "C:/Users/SERGV/Downloads/Final Project/StormEvents_details-ftp_v1.0_d2022_c20240716.csv"
+file_path <- "/Users/user/Desktop/Final-Project/StormEvents_details-ftp_v1.0_d2022_c20240716.csv"
 
 
 storm_data <- read.csv(file_path)
@@ -54,18 +54,94 @@ ggplot(month_data, aes(x = factor(MONTH_NAME, levels = c("January", "February", 
         plot.title = element_text(hjust = 0.5, size = 16, face = "bold"))
 
 
+```
+
+```{r}
+#|message: false
 #Second Graphic
 
+library(dplyr)
+library(ggplot2)
+library(ggridges)
+
 filtered_data <- storm_data %>%
-  group_by(STATE) %>%
-  filter(n() < 20) %>%
+  filter(STATE %in% c("PENNSYLVANIA", "OKLAHOMA", "TEXAS", "MISSISSIPPI", "NEW MEXICO", "FLORIDA"),
+         EVENT_TYPE %in% c("Tornado", "Flood", "Hail", "Thunderstorm Wind", "Heavy Rain"))%>%
+  group_by(EVENT_TYPE, STATE) %>%
+  filter(n() > 10) %>%
   ungroup()
 
 
 ggplot(filtered_data, aes(x = MONTH_NAME, y = EVENT_TYPE, fill = EVENT_TYPE)) +
-  geom_density_ridges(alpha = 0.7) +
-  theme_ridges() +
-  labs(title = "Ridgeline Chart of Event Types", x = "Value", y = "Event Type")
+  geom_density_ridges(alpha = 0.5, scale = 1,rel_min_height = 0.01) +
+  theme_ridges(center_axis_labels = TRUE) +
+  scale_fill_viridis_d(option = "C") +
+  labs(
+    title = "Ridgeline Chart of Selected Event Types",
+    x = "Month",
+    y = "Event Type",
+    fill = "Event Type"
+  ) +
+  theme(
+    axis.title.x = element_text(size = 14),
+    axis.title.y = element_text(size = 14),
+    axis.text.x = element_text(size = 10, angle = 90, hjust = 1, vjust = 1),
+    axis.text.y = element_text(size = 12),
+    legend.position = "right",
+    plot.margin = margin(20) # Increase margin if needed
+  )
 
+```
+
+```{r}
+library(dplyr)
+library(leaflet)
+library(sf)
+
+
+# Convert damage property to numeric (assuming it's in a column called 'DAMAGE_PROPERTY')
+storm_data$DAMAGE_PROPERTY <- as.numeric(gsub("[^0-9]", "", storm_data$DAMAGE_PROPERTY))
+
+# Aggregate data to get the sum of damage property by state
+damage_by_state <- storm_data %>%
+  group_by(STATE) %>%
+  summarize(total_damage = sum(DAMAGE_PROPERTY, na.rm = TRUE))
+
+
+
+
+us_states <- st_read("/Users/user/Desktop/Final-Project/us_states.shp")
+
+us_states <- us_states %>%
+  left_join(damage_by_state, by = c("STATE_NAME" = "STATE"))
+# Create the color palette
+pal <- colorNumeric(palette = "YlOrRd", domain = us_states$total_damage, na.color = "transparent")
+
+# Create the leaflet map
+leaflet(us_states) %>%
+  addTiles() %>%
+  addPolygons(
+    fillColor = ~pal(total_damage),
+    weight = 1,
+    opacity = 1,
+    color = "white",
+    dashArray = "3",
+    fillOpacity = 0.7,
+    highlight = highlightOptions(
+      weight = 2,
+      color = "#666",
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE
+    ),
+    label = ~paste0(STATE_NAME, ": $", format(total_damage, big.mark = ",")),
+    labelOptions = labelOptions(
+      style = list("font-weight" = "normal", padding = "3px 8px"),
+      textsize = "15px",
+      direction = "auto"
+    )
+  ) %>%
+  addLegend(pal = pal, values = ~total_damage, opacity = 0.7, title = "Total Damage",
+            position = "bottomright")
 
 ```
