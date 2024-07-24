@@ -16,7 +16,7 @@ library(ggplot2)
 
 #First Graphic
 
-file_path <- "/Users/user/Desktop/Final-Project/StormEvents_details-ftp_v1.0_d2022_c20240716.csv"
+file_path <- "C:/Users/SERGV/Downloads/Final-Project/StormEvents_details-ftp_v1.0_d2022_c20240716.csv"
 
 
 storm_data <- read.csv(file_path)
@@ -94,54 +94,84 @@ ggplot(filtered_data, aes(x = MONTH_NAME, y = EVENT_TYPE, fill = EVENT_TYPE)) +
 ```
 
 ```{r}
+
+# Load necessary libraries
 library(dplyr)
+library(stringr)
 library(leaflet)
-library(sf)
+library(sp)
+library(maps)
 
+# Read the CSV file
+data <- read.csv("C:/Users/SERGV/Downloads/Final-Project/StormEvents_details-ftp_v1.0_d2022_c20240716.csv")
 
-# Convert damage property to numeric (assuming it's in a column called 'DAMAGE_PROPERTY')
-storm_data$DAMAGE_PROPERTY <- as.numeric(gsub("[^0-9]", "", storm_data$DAMAGE_PROPERTY))
+# Function to convert damage values to numeric
+convert_damage <- function(damage) {
+  if (is.na(damage)) {
+    return(0)
+  }
+  multiplier <- 1
+  if (str_detect(damage, "K$")) {
+    multiplier <- 1e3
+  } else if (str_detect(damage, "M$")) {
+    multiplier <- 1e6
+  } else if (str_detect(damage, "B$")) {
+    multiplier <- 1e9
+  }
+  return(as.numeric(str_remove(damage, "[KMB]$")) * multiplier)
+}
 
-# Aggregate data to get the sum of damage property by state
-damage_by_state <- storm_data %>%
+# Apply the conversion function
+data$DAMAGE_PROPERTY <- sapply(data$DAMAGE_PROPERTY, convert_damage)
+data$DAMAGE_CROPS <- sapply(data$DAMAGE_CROPS, convert_damage)
+
+# Aggregate the data by state
+state_damage_summary <- data %>%
   group_by(STATE) %>%
-  summarize(total_damage = sum(DAMAGE_PROPERTY, na.rm = TRUE))
+  summarize(
+    total_property_damage = sum(DAMAGE_PROPERTY, na.rm = TRUE),
+    total_crop_damage = sum(DAMAGE_CROPS, na.rm = TRUE)
+  ) %>%
+  mutate(total_damage = total_property_damage + total_crop_damage)
 
+# Scale down the total damage values (e.g., to millions of dollars)
+scale_factor <- 1e6
+state_damage_summary <- state_damage_summary %>%
+  mutate(total_damage_scaled = total_damage / scale_factor)
 
+# Create a data frame with state names and abbreviations
+state_abbr <- data.frame(
+  state = tolower(state.name),
+  abbreviation = state.abb
+)
 
+# Merge the damage summary with state abbreviations
+state_damage_summary <- state_damage_summary %>%
+  left_join(state_abbr, by = c("STATE" = "abbreviation"))
 
-us_states <- st_read("/Users/user/Desktop/Final-Project/us_states.shp")
+# Replace NA in 'state' column with state abbreviation
+state_damage_summary$state <- ifelse(is.na(state_damage_summary$state), tolower(state_damage_summary$STATE), state_damage_summary$state)
 
-us_states <- us_states %>%
-  left_join(damage_by_state, by = c("STATE_NAME" = "STATE"))
-# Create the color palette
-pal <- colorNumeric(palette = "YlOrRd", domain = us_states$total_damage, na.color = "transparent")
+# Get US states map data
+states <- map("state", fill = TRUE, plot = FALSE)
+
+# Set the range for total damage
+min_damage <- 6e6  # $6,000,000
+max_damage <- 1.023e9  # $1,023,000,000
+
+# Create a color palette based on the scaled total damage
+pal <- colorNumeric(palette = "YlOrRd", domain = state_damage_summary$total_damage_scaled)
 
 # Create the leaflet map
-leaflet(us_states) %>%
-  addTiles() %>%
+leaflet(data = states) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
   addPolygons(
-    fillColor = ~pal(total_damage),
-    weight = 1,
-    opacity = 1,
-    color = "white",
-    dashArray = "3",
+    fillColor = ~pal(state_damage_summary$total_damage_scaled[match(states$names, state_damage_summary$state)]),
     fillOpacity = 0.7,
-    highlight = highlightOptions(
-      weight = 2,
-      color = "#666",
-      dashArray = "",
-      fillOpacity = 0.7,
-      bringToFront = TRUE
-    ),
-    label = ~paste0(STATE_NAME, ": $", format(total_damage, big.mark = ",")),
-    labelOptions = labelOptions(
-      style = list("font-weight" = "normal", padding = "3px 8px"),
-      textsize = "15px",
-      direction = "auto"
-    )
+    color = "#BDBDC3",
+    weight = 1,
+    label = ~paste(state_damage_summary$state, ": $", formatC(state_damage_summary$total_damage_scaled, format = "f", big.mark = ","), "M"),
+    highlightOptions = highlightOptions(color = "white", weight = 2, bringToFront = TRUE)
   ) %>%
-  addLegend(pal = pal, values = ~total_damage, opacity = 0.7, title = "Total Damage",
-            position = "bottomright")
-
+  addLegend(pal = pal, values = state_damage_summary$total_damage_scaled, opacity = 0.7, title = "Total Damage (Millions of $)", position = "bottomright")
 ```
